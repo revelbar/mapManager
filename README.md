@@ -34,7 +34,7 @@ Features
 - Output basic statistical description and histograms of each band in a mapp
 - Apply Felzenszwalb's and the Quickshift methods of region-based segmentation
 - Streamline handling and production of multiple segmentations and masks for a map
-- Calculate indices from available maps****
+- Calculate indices from available maps
 
 ## SETTING UP
 
