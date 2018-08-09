@@ -127,26 +127,31 @@ class Super_Map(object):
         2D array that determines which pixels are to be excluded from calculations
         NOTE: this must have the same dimensions of pixels as _img
     
-    Methods
+    Methods 
     -------
-    array (property): numpy ndarray
+    //PRIVATE AND MAGIC FUNCTIONS NOT INCLUDED//
+    array (property): (N/A)
         gives a copy of the image array
-    segments (property): dict
+    segments (property): (N/A)
         gives a copy of the segments
-    array_calc (property): numpy ndarray
+    array_calc (property): (N/A)
         gives a flattened array of pixel values, mask-tagged pixels excluded. Used for calculations
-    copy: Grayscale/Multispectral 
-        gives a copy of the object
-    set_mask
-    set_segments
-    _get_segments
-    _clip_segment
-    clip_mask
-    save
-    fit_segments
-    calc_bySegment
-    
-    
+    copy: (N/A)https://nbconvert.readthedocs.io/en/latest/
+        gives a copy of the map
+    set_mask: (numpy ndarray)
+        sets given array as the mask. Array has to have the same # of pixels as the img.
+    set_segments: (Segments, str)
+        adds a class instance of a Segment to the dict _segments
+    clip_mask: (int, numpy ndarray)
+        cuts out the background from the image based on a given mask or a set mask.
+    save: (str, boolean)
+        saves the map in a folder of the same name in a set directory.
+    apply_index(func, *args)
+        calculates a value for each pixel in the image from the values of the available bands. 
+    fit_segments: (Segments)
+        makes a new Segments instance that has the same dimensions as the map.
+    calc_bySegment: (Segments, func, *args, int, boolean)
+        runs a function on each segment individually.
     """
 
     def __init__(self,img, name, resolution = None):
@@ -220,13 +225,20 @@ class Super_Map(object):
         ----------
         mask: numpy array
             2D array with all values are false/true. Indicates which pixels will be included in histograms, 
-            statistics, etc. If you want to remove the mask, use : .setMask(None)
+            statistics, etc. Note that mask must have the same img dimension as the map. If you want to remove 
+            the mask, use : .set_mask(None)
         
         Returns
         -------
         None
         """
-        self._mask = mask
+        if type(mask) != type(None):
+            if mask.shape[0] == self._img.shape[0] and mask.shape[1] == self._img.shape[1]:
+                self._mask = mask
+            else:
+                raise ValueError("Mask has to have the same image dimension as the map!")
+        else:
+            self._mask = None
     def set_segments(self, segments, name):
         """
         Manually sets up a segmentation array for the class instance to access.
@@ -370,7 +382,6 @@ class Super_Map(object):
         -------
         str
             name of the folder holding the data
-
         """
         if type(project_name) == str:
             new_save = os.path.join(save_folder, project_name)
@@ -547,11 +558,53 @@ class Multispectral(Super_Map):
     band_names: dict
         contains the name of each band, with the key being the band number and the value being the band name itself
         
-    Methods
+    Methods 
     -------
-    TBC
-        
-    
+    //PRIVATE AND MAGIC FUNCTIONS NOT INCLUDED//
+    array (property): (N/A)
+        gives a copy of the image array
+    segments (property): (N/A)
+        gives a copy of the segments
+    array_calc (property): (N/A)
+        gives a flattened array of pixel values, mask-tagged pixels excluded. Used for calculations
+    copy: (N/A)https://nbconvert.readthedocs.io/en/latest/
+        gives a copy of the map
+    set_mask: (numpy ndarray)
+        sets given array as the mask. Array has to have the same # of pixels as the img.
+    set_segments: (Segments, str)
+        adds a class instance of a Segment to the dict _segments
+    clip_mask: (int, numpy ndarray)
+        cuts out the background from the image based on a given mask or a set mask.
+    save: (str, boolean)
+        saves the map in a folder of the same name in a set directory.
+    apply_index(func, *args)
+        calculates a value for each pixel in the image from the values of the available bands. 
+    fit_segments: (Segments/str)
+        makes a new Segments instance that has the same dimensions as the map.
+    calc_bySegment: (Segments/str, func, *args, int, boolean)
+        runs a function on each segment individually.
+    display: (*args)
+        shows a plot of the map
+    name_band: (int, str)
+        names an available band
+    add_band: (numpy ndarray, str)
+        joins a new band to your map.
+    remove_band: (int)
+        removes the band indicated from the map.
+    histogram: (boolean, int/list)
+        makes a frequency count on each of the band values and plots a histogram
+    statistics: (N/A)
+        outputs basic descriptive statistics on the map
+    inc_contrast: (*args, numpy ndarray, boolean)
+        shows the map with an increased contrast
+    segmentMap_fz: (*args, float, float, float, boolean, boolean, boolean)
+        segments the map based on the Felzenszwalb method. 
+    segmentMap_quick: (*args, float, float, float, boolean, boolean, boolean)
+        segments the map based on the Quickshift method.
+    view_segments: (Segments/str)
+        plots the image with the boundaries between user's selected segmentation
+    clip_segment(Segments/str, int/str/list, boolean)
+        clips the image based on a segmentation
     """
     def __init__(self, img, name, resolution = None):
         """
@@ -981,8 +1034,52 @@ class Multispectral(Super_Map):
             newMap.display(1,2,3)
 
         return newMap
-    def save(self,project_name = None, overwrite=False):
-        folder = super().save(project_name = project_name, overwrite=overwrite)
+    def save(self,**kwargs):
+        """
+        Saves the data stored in a class instance for future use
+
+        Data is placed in a subdirectory inside the folder whose name is in var save_folder. The folder name for the map is the same as the name of the class instance
+
+        Directory:
+
+        \working_directory
+            \saved_data
+                \project_name (if applicable)
+                    \map
+                        metadata.pkl
+                        _img.pkl
+                        _mask.pkl (if applicable)
+                        \segments (if applicable)
+                            \segment1
+                                - data
+                            \segment2
+                                - data
+                \map
+                    metadata.pkl
+                    _img.pkl
+                    _mask.pkl (if applicable)
+                    \segments (if applicable)
+                        \segment1
+                            - data
+                        \segment2
+                            - data
+             -script1.py
+
+        Parameters
+        ----------
+        project_name: str (optional)
+            name of the folder inside the save_folder you want to save the map in
+        overwrite: boolean (default = False)
+            if False, will not overwrite a folder whose name is the same as itself
+            if True, will overwrite an same-named folder
+
+        Returns
+        -------
+        str
+            name of the folder holding the data
+
+        """
+        folder = super().save(**kwargs)
         if len(self.band_names) > 0:
             save(self.band_names, "band_names", folder=folder, overwrite=True)
 
@@ -1035,7 +1132,47 @@ class Grayscale(Super_Map):
         NOTE: this must have the same dimensions of pixels as _img
     List of unique functions: display, histogram, statistics
         
-    
+    Methods 
+    -------
+    //PRIVATE AND MAGIC FUNCTIONS NOT INCLUDED//
+    array (property): (N/A)
+        gives a copy of the image array
+    segments (property): (N/A)
+        gives a copy of the segments
+    array_calc (property): (N/A)
+        gives a flattened array of pixel values, mask-tagged pixels excluded. Used for calculations
+    copy: (N/A)https://nbconvert.readthedocs.io/en/latest/
+        gives a copy of the map
+    set_mask: (numpy ndarray)
+        sets given array as the mask. Array has to have the same # of pixels as the img.
+    set_segments: (Segments, str)
+        adds a class instance of a Segment to the dict _segments
+    clip_mask: (int, numpy ndarray)
+        cuts out the background from the image based on a given mask or a set mask.
+    save: (str, boolean)
+        saves the map in a folder of the same name in a set directory.
+    apply_index(func, *args)
+        calculates a value for each pixel in the image from the values of the available bands. 
+    fit_segments: (Segments/str)
+        makes a new Segments instance that has the same dimensions as the map.
+    calc_bySegment: (Segments/str, func, *args, int, boolean)
+        runs a function on each segment individually.
+    display: (N/A)
+        shows a plot of the map
+    histogram: (boolean)
+        makes a frequency count on each of the band values and plots a histogram
+    statistics: (N/A)
+        outputs basic descriptive statistics on the map
+    inc_contrast: (*args, numpy ndarray, boolean)
+        shows the map with an increased contrast
+    segmentMap_fz: (float, float, float, boolean, boolean, boolean)
+        segments the map based on the Felzenszwalb method. 
+    segmentMap_quick: (float, float, float, boolean, boolean, boolean)
+        segments the map based on the Quickshift method.
+    view_segments: (Segments/str)
+        plots the image with the boundaries between user's selected segmentation
+    clip_segment(Segments/str, int/str/list, boolean)
+        clips the image based on a segmentation
     """
     def __init__(self, img, name, resolution = None):
         """
